@@ -1,5 +1,5 @@
 /* Agenda CEO · NCD — service worker: guarda o app no aparelho para abrir sem internet. */
-const VERSAO = 'agenda-ceo-v1';
+const VERSAO = 'agenda-ceo-v2';
 const ARQUIVOS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './icon-512-maskable.png'];
 
 self.addEventListener('install', e => {

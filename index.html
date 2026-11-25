@@ -608,10 +608,12 @@ function act(op,...args){
 
 /* ---------- rede ---------- */
 let syncing=false,again=false,lastOk=LS.get('ncdLastSync',0);
-async function post(ops){
- const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({k:CHAVE,ops})});
- if(!r.ok)throw new Error('Servidor respondeu '+r.status);return r.json();
+async function req(url,opt,ms){
+ const ac=new AbortController(),t=setTimeout(()=>ac.abort(),ms||60000);
+ try{const r=await fetch(url,{...(opt||{}),signal:ac.signal,cache:'no-store'});if(!r.ok)throw new Error('Servidor respondeu '+r.status);return await r.json()}
+ finally{clearTimeout(t)}
 }
+const post=ops=>req(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({k:CHAVE,ops})});
 async function sync(){
  if(!CHAVE)return;
  if(syncing){again=true;return}
@@ -626,8 +628,9 @@ async function sync(){
    outbox=outbox.slice(lote.length);LS.set('ncdOutbox',outbox);
   }
   if(!document.querySelector('dialog[open]')){
-   const r=await fetch(API+'?api=carregar&k='+encodeURIComponent(CHAVE));
-   const d=await r.json();
+   const resp=await req(API+'?api=carregar&k='+encodeURIComponent(CHAVE)+'&t='+Date.now());
+   const d=resp.d?{...resp.d,papel:resp.papel}:resp;
+   if(resp.erro){if(/autoriz/i.test(resp.erro)){askKey('Esta chave de acesso não é válida.');return}throw new Error(resp.erro)}
    if(d.erro){if(/autoriz/i.test(d.erro)){askKey('Esta chave de acesso não é válida.');return}throw new Error(d.erro)}
    PAPEL=d.papel;
    S.acts=(d.atividades||[]).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.data)).map(fromSheetA);
