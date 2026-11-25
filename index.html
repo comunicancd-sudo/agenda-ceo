@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<base target="_blank">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f0e0d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Agenda CEO">
+<title>Agenda CEO · NCD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calma, executiva, segura — a agenda de bolso de uma presidente.
+   IDEA: um caderno de compromissos encadernado em laranja NCD; voos como cartões de embarque.
+   PICTURE: a própria agenda — calendário do mês + lista do dia com horários grandes pendurados.
+   COLOUR and TYPE: laranja NCD #E88C08 dominante, preto/tinta, branco; Montserrat (letra do selo) + Inter.
+   LAYOUT: faixa preta de topo; coluna do calendário à esquerda, dia à direita; empilha abaixo de 900px. */
+:root{color-scheme:light dark;
+ --bg:light-dark(#f4f2ef,#121110);--card:light-dark(#ffffff,#1c1a18);--ink:light-dark(#151312,#f3efe9);
+ --soft:light-dark(#6d6862,#a49d94);--line:light-dark(#e6e1da,#2e2a26);--o:#e88c08;--o2:light-dark(#c06f00,#ffae3b);
+ --otint:light-dark(#fdf0dc,#3a2a12);--top:#0f0e0d;--ok:light-dark(#1f7a4d,#5fd39a);--danger:light-dark(#b42318,#ff8a80);
+ --shadow:light-dark(0 1px 2px rgba(20,16,10,.06),0 1px 2px rgba(0,0,0,.4))}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3,.mont{font-family:Montserrat,Inter,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--o);outline-offset:2px}
+svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* topo */
+.top{background:var(--top);color:#fff;padding:calc(14px + env(safe-area-inset-top)) max(4vw,16px,env(safe-area-inset-right)) 14px max(4vw,16px,env(safe-area-inset-left));display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand img{width:44px;height:44px}
+.brand b{display:block;font:700 18px/1.1 Montserrat,sans-serif;letter-spacing:.01em}
+.brand span{font-size:13px;color:#bdb6ad}
+.tabs{display:flex;gap:4px;background:#24211e;border-radius:999px;padding:4px}
+.tabs button{border:0;background:none;color:#d8d2ca;padding:8px 18px;border-radius:999px;font:600 14px Montserrat,sans-serif;display:flex;gap:8px;align-items:center;min-height:40px}
+.tabs button[aria-selected=true]{background:var(--o);color:#1a1206}
+.role{display:flex;align-items:center;gap:8px;font-size:13px;color:#bdb6ad}
+.role select{background:#24211e;color:#fff;border:1px solid #3a3530;border-radius:10px;padding:8px 10px;font-size:14px}
+.pill-role{background:#24211e;border-radius:999px;padding:7px 12px;color:#fff;font-weight:600}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:12px;padding:10px 16px;min-height:44px;font:600 15px Montserrat,sans-serif;background:var(--o);color:#1a1206}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.dark{background:var(--ink);color:var(--bg)}
+.btn.small{min-height:36px;padding:6px 12px;font-size:13px;border-radius:10px}
+.btn.danger{background:transparent;color:var(--danger);border:1.5px solid currentColor}
+
+.note{margin:0;padding:10px max(4vw,16px);background:var(--otint);color:var(--ink);font-size:14px;display:none}
+.note.on{display:block}
+
+main{max-width:1280px;margin:0 auto;padding:24px max(4vw,16px) 64px}
+.grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:24px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}.grid>aside{order:2}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+
+/* calendário */
+.cal{padding:18px}
+.calhead{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.calhead h2{font-size:19px;margin:0 auto 0 0}
+.iconbtn{border:1px solid var(--line);background:var(--card);border-radius:10px;width:40px;height:40px;display:grid;place-items:center}
+.dow,.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.dow span{font-size:12px;color:var(--soft);font-weight:600;padding:4px 0}
+.day{position:relative;border:0;background:none;border-radius:12px;aspect-ratio:1/1.05;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:600 14px Montserrat,sans-serif;padding:0}
+.day:hover{background:var(--otint)}
+.day.out{opacity:.35}
+.day.today .n{background:var(--ink);color:var(--bg);border-radius:999px;width:28px;height:28px;display:grid;place-items:center}
+.day.sel{background:var(--o);color:#1a1206}
+.day.sel .n{background:#1a1206;color:#fff}
+.day.off .n{text-decoration:underline dotted;text-underline-offset:3px}
+.dots{display:flex;gap:3px;height:6px;align-items:center}
+.dots i{width:6px;height:6px;border-radius:9px;background:var(--o)}
+.day.sel .dots i{background:#1a1206}
+.dots i.k{background:none;border:1.5px solid var(--soft)}
+.dots i.ok{background:var(--ok)}
+.dots svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:2.4}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--soft);margin-top:12px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:8px;height:8px;border-radius:9px;background:var(--o);display:inline-block}
+.legend i.k{background:none;border:1.5px solid var(--soft)}
+.legend i.ok{background:var(--ok)}
+
+.stat{padding:18px;margin-top:16px}
+.stat h3{margin:0 0 4px;font-size:15px}
+.big{font:700 34px/1 Montserrat,sans-serif;letter-spacing:-.01em}
+.big small{font-size:15px;color:var(--soft);font-weight:600}
+.bar{height:10px;background:var(--line);border-radius:9px;overflow:hidden;margin:10px 0 4px}
+.bar b{display:block;height:100%;background:var(--o);border-radius:9px;transition:width .4s}
+.muted{color:var(--soft);font-size:13.5px}
+.nextfl{padding:18px;margin-top:16px;cursor:pointer;border:0;text-align:left;width:100%;display:block}
+.nextfl .route{display:flex;align-items:center;gap:10px;font:800 26px Montserrat,sans-serif;margin:6px 0}
+.nextfl .route svg{width:22px;height:22px;color:var(--o)}
+
+/* dia */
+.dayhead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:16px}
+.dayhead h1{margin:0;font-size:clamp(28px,4vw,44px);line-height:1.05;letter-spacing:-.015em;text-wrap:balance}
+.dayhead .wk{display:block;font:600 14px Inter,sans-serif;color:var(--o2);letter-spacing:0;margin-bottom:4px}
+.dayhead .sp{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:12px;padding:3px;background:var(--card)}
+.seg button{border:0;background:none;border-radius:9px;padding:6px 12px;font:600 13.5px Montserrat,sans-serif;min-height:36px;color:var(--soft)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center}
+.chip{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:500;min-height:38px}
+.chip[aria-pressed=true]{border-color:var(--o);background:var(--otint);color:var(--ink);font-weight:600}
+.search{flex:1 1 220px;display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:0 12px;min-height:42px}
+.search input{border:0;background:none;outline:none;width:100%;font-size:16px;padding:8px 0}
+
+.aviso{display:flex;gap:10px;align-items:center;background:var(--ink);color:var(--bg);border-radius:14px;padding:12px 16px;margin-bottom:12px;font:600 14px Montserrat,sans-serif;flex-wrap:wrap}
+.aviso svg{color:var(--o)}
+.aviso .ed{margin-left:auto}
+.aviso .ed button{background:none;border:1px solid rgba(255,255,255,.3);color:inherit;border-radius:8px;padding:4px 10px;font-size:12.5px;min-height:32px}
+:root[data-theme=dark] .aviso .ed button{border-color:rgba(0,0,0,.3)}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.it{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:14px;align-items:start}
+.time{font:700 20px/1.2 Montserrat,sans-serif;text-align:right;padding-top:16px;white-space:nowrap}
+.time small{display:block;font-size:13px;color:var(--soft);font-weight:600}
+.time.allday{font-size:12.5px;color:var(--soft);font-weight:600;padding-top:20px}
+.box{padding:14px 16px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.box.know{background:transparent;border-style:dashed}
+.box h3{margin:0;font-size:16.5px;line-height:1.35;font-weight:600;overflow-wrap:anywhere}
+.done .box h3{text-decoration:line-through;text-decoration-color:var(--soft);color:var(--soft)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap}
+.tag.p{background:var(--o);color:#1a1206}
+.tag.k{border:1.5px solid var(--soft);color:var(--soft);padding:2px 9px}
+.tag.c{color:var(--soft);padding-left:2px}
+.tag.c i{width:8px;height:8px;border-radius:9px;display:inline-block}
+.tag svg{width:14px;height:14px}
+button.tag{border:0;font-family:inherit}
+button.tag.k{border:1.5px solid var(--soft);background:none}
+.meta{display:flex;flex-direction:column;gap:4px;margin-top:10px;font-size:14px;color:var(--soft)}
+.meta div{display:flex;gap:8px;align-items:flex-start;overflow-wrap:anywhere}
+.meta svg{width:16px;height:16px;margin-top:2px}
+.meta a{color:var(--o2);font-weight:600}
+.desc{white-space:pre-wrap;margin-top:8px;font-size:14px;overflow-wrap:anywhere}
+.adm{display:flex;gap:6px;margin-top:10px}
+.check{width:48px;height:48px;border-radius:999px;border:2px solid var(--line);background:var(--card);display:grid;place-items:center;margin-top:8px;color:transparent;transition:background .2s,border-color .2s}
+.check:hover{border-color:var(--o)}
+.check svg{width:24px;height:24px;stroke-width:3}
+.done .check{background:var(--o);border-color:var(--o);color:#1a1206}
+.check.k{width:auto;height:36px;border-radius:999px;padding:0 12px;font-size:12.5px;font-weight:600;color:var(--soft);display:flex;gap:6px;margin-top:12px}
+.check.k svg{width:16px;height:16px;color:transparent}
+.done .check.k{background:var(--otint);border-color:var(--o);color:var(--ink)}
+.done .check.k svg{color:var(--o2)}
+.check[disabled]{cursor:default;opacity:.7}
+@media(prefers-reduced-motion:no-preference){.done .check svg{animation:pop .3s ease}}
+@keyframes pop{from{transform:scale(.4)}to{transform:scale(1)}}
+@media(max-width:600px){.it{grid-template-columns:52px minmax(0,1fr) auto;gap:8px}.time{font-size:16px}.check{width:42px;height:42px}.check.k{width:42px;height:42px;padding:0;justify-content:center;margin-top:8px}.check.k .tx{display:none}.check.k svg{width:20px;height:20px}.tag{white-space:normal}.box{padding:12px 13px}}
+
+.empty{padding:28px;text-align:center;color:var(--soft);border:1.5px dashed var(--line);border-radius:16px}
+.wday{margin:22px 0 8px;font:700 15px Montserrat,sans-serif;display:flex;gap:10px;align-items:baseline}
+.wday button{border:0;background:none;padding:0;font:inherit;color:inherit}
+.wday span{color:var(--soft);font-weight:600;font-size:13px;text-transform:none}
+
+/* voo mini e cartão de embarque */
+.fl{display:grid;grid-template-columns:minmax(0,1fr) auto;border-radius:18px;overflow:hidden;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.fl .main{padding:16px 18px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.fl .ap b{display:block;font:800 clamp(26px,4vw,34px)/1 Montserrat,sans-serif;letter-spacing:.02em}
+.fl .ap span{display:block;font-size:12.5px;color:var(--soft);margin-top:4px}
+.fl .ap .t{font:700 17px Montserrat,sans-serif;color:var(--ink);margin-top:6px}
+.fl .ap.r{text-align:right}
+.fl .path{display:flex;align-items:center;gap:6px;color:var(--o);padding:0 clamp(4px,2vw,24px)}
+.fl .path i{flex:1;border-top:2px dashed var(--line)}
+.fl .path svg{width:22px;height:22px}
+.fl .stub{background:var(--o);color:#1a1206;padding:14px 18px;display:flex;flex-direction:column;gap:6px;justify-content:center;border-left:2px dashed rgba(0,0,0,.25);width:240px}
+.fl .stub b{font:700 15px Montserrat,sans-serif}
+.fl .stub small{font-size:12px;opacity:.8;display:block}
+.fl .stub .loc{display:flex;align-items:center;gap:6px;font:700 17px Montserrat,sans-serif;letter-spacing:.06em}
+.fl .stub button{border:0;background:rgba(0,0,0,.12);border-radius:8px;padding:4px 8px;font-size:12px;font-weight:600;min-height:28px}
+.fl .foot{grid-column:1/-1;padding:10px 18px;border-top:1px solid var(--line);font-size:13.5px;color:var(--soft);display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.fl.past{opacity:.55}
+@media(max-width:600px){.fl{grid-template-columns:minmax(0,1fr)}.fl .stub{width:auto;border-left:0;border-top:2px dashed rgba(0,0,0,.25);flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 18px}}
+.flday{display:grid;grid-template-columns:84px minmax(0,1fr);gap:14px}
+@media(max-width:600px){.flday{grid-template-columns:58px minmax(0,1fr);gap:10px}}
+
+.voos h1{font-size:clamp(28px,4vw,44px);margin:0;line-height:1.05}
+.vhead{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:20px}
+.vhead .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.vlist{display:flex;flex-direction:column;gap:12px}
+.vdate{font:700 14px Montserrat,sans-serif;margin:18px 0 0;color:var(--soft)}
+.vmonth{font:800 22px Montserrat,sans-serif;margin:30px 0 4px}
+
+/* modal */
+dialog{border:0;border-radius:20px;padding:0;width:min(620px,94vw);background:var(--card);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(10,8,6,.55)}
+.mhead{background:var(--top);color:#fff;padding:18px 22px;display:flex;align-items:center;gap:12px}
+.mhead h2{margin:0;font-size:19px;margin-right:auto}
+.mhead button{background:none;border:0;color:#fff;width:40px;height:40px}
+form.f{padding:20px 22px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.f label{display:flex;flex-direction:column;gap:6px;font-size:13.5px;font-weight:600}
+.f .full{grid-column:1/-1}
+.f input,.f select,.f textarea{border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;font-size:16px;font-weight:400;min-height:44px}
+.f textarea{min-height:90px;resize:vertical}
+.f input:focus,.f select:focus,.f textarea:focus{border-color:var(--o);outline:none}
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choice label{flex-direction:row;align-items:flex-start;gap:10px;border:1.5px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;font-weight:500}
+.choice label b{display:block;font:700 14.5px Montserrat,sans-serif}
+.choice label span{font-size:12.5px;color:var(--soft)}
+.choice input{min-height:0;margin-top:3px;accent-color:var(--o);width:18px;height:18px}
+.choice label:has(input:checked){border-color:var(--o);background:var(--otint)}
+.factions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;padding-top:6px}
+.factions .del{margin-right:auto}
+.inline{flex-direction:row!important;align-items:center;gap:10px!important;font-weight:500!important}
+.inline input{min-height:0!important;width:18px;height:18px;accent-color:var(--o)}
+@media(max-width:600px){form.f{grid-template-columns:minmax(0,1fr)}.choice{grid-template-columns:1fr}}
+.toast{visibility:hidden;position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120px);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:600;font-size:14px;transition:transform .25s;z-index:20;max-width:90vw}
+.toast.on{visibility:visible;transform:translateX(-50%) translateY(0)}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+ <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+ <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></symbol>
+ <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></symbol>
+ <symbol id="i-plane" viewBox="0 0 24 24"><path d="M10.5 21l1.5-6-6 2.5V15l6.5-4V5a1.5 1.5 0 0 1 3 0v6l6.5 4v2.5l-6-2.5 1.5 6-3-1.5z" transform="rotate(90 12 12)"/></symbol>
+ <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+ <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+ <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+ <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+ <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></symbol>
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+ <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+ <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+ <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+ <symbol id="i-dup" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></symbol>
+</svg>
+
+<header class="top">
+ <div class="brand"><img src="data:image/png;base64,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" alt="NCD"><div><b>Agenda da CEO</b><span>Roberta Dietrich · NCD</span></div></div>
+ <nav class="tabs" role="tablist">
+  <button role="tab" id="tab-agenda" aria-selected="true"><svg class="i"><use href="#i-cal"/></svg>Agenda</button>
+  <button role="tab" id="tab-voos" aria-selected="false"><svg class="i"><use href="#i-plane"/></svg>Voos</button>
+ </nav>
+ <div class="role" id="rolebox"><span class="pill-role" id="rolepill">Carregando…</span></div>
+</header>
+<p class="note" id="note"></p>
+
+<main>
+ <section id="v-agenda">
+  <div class="grid">
+   <aside>
+    <div class="card cal">
+     <div class="calhead">
+      <h2 id="calTitle">—</h2>
+      <button class="iconbtn" id="calPrev" aria-label="Mês anterior"><svg class="i"><use href="#i-left"/></svg></button>
+      <button class="iconbtn" id="calNext" aria-label="Próximo mês"><svg class="i"><use href="#i-right"/></svg></button>
+     </div>
+     <div class="dow"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div>
+     <div class="days" id="days"></div>
+     <div class="legend"><span><i></i>Participar (pendente)</span><span><i class="ok"></i>Tudo concluído</span><span><i class="k"></i>Só para conhecimento</span><span><svg class="i" style="width:12px;height:12px"><use href="#i-plane"/></svg>Voo</span></div>
+    </div>
+    <div class="card stat">
+     <h3 id="stTitle">Neste mês</h3>
+     <div class="big" id="stBig">0 <small>de 0</small></div>
+     <div class="bar"><b id="stBar" style="width:0"></b></div>
+     <div class="muted" id="stSub">atividades com participação concluídas</div>
+    </div>
+    <button class="card nextfl" id="nextFl"></button>
+   </aside>
+
+   <div>
+    <div class="dayhead">
+     <h1 id="dayTitle"><span class="wk">—</span>—</h1>
+     <div class="sp">
+      <button class="iconbtn" id="dPrev" aria-label="Anterior"><svg class="i"><use href="#i-left"/></svg></button>
+      <button class="btn ghost small" id="dToday">Hoje</button>
+      <button class="iconbtn" id="dNext" aria-label="Próximo"><svg class="i"><use href="#i-right"/></svg></button>
+      <div class="seg" id="modeSeg"><button data-m="dia" aria-pressed="true">Dia</button><button data-m="semana" aria-pressed="false">Semana</button></div>
+      <button class="btn adminOnly hide" id="btnNew"><svg class="i"><use href="#i-plus"/></svg>Nova atividade</button>
+     </div>
+    </div>
+    <div class="tools">
+     <button class="chip" data-f="todas" aria-pressed="true">Todas</button>
+     <button class="chip" data-f="participar" aria-pressed="false">Participar</button>
+     <button class="chip" data-f="conhecimento" aria-pressed="false">Para conhecimento</button>
+     <button class="chip" data-f="pendentes" aria-pressed="false">Pendentes</button>
+     <label class="search"><svg class="i"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Buscar no ano todo (ex.: Eslovênia, Muriel)" aria-label="Buscar atividades"></label>
+    </div>
+    <div id="dayBody"></div>
+   </div>
+  </div>
+ </section>
+
+ <section id="v-voos" class="voos hide">
+  <div class="vhead">
+   <div><h1>Voos</h1><div class="muted" id="vSub"></div></div>
+   <div class="sp">
+    <div class="seg" id="vSeg"><button data-v="prox" aria-pressed="true">Próximos</button><button data-v="todos" aria-pressed="false">Todos</button></div>
+    <button class="btn adminOnly hide" id="btnNewFl"><svg class="i"><use href="#i-plus"/></svg>Novo voo</button>
+   </div>
+  </div>
+  <div class="vlist" id="vList"></div>
+ </section>
+</main>
+
+<dialog id="dlgA">
+ <div class="mhead"><h2 id="dlgATitle">Nova atividade</h2><button type="button" data-close aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button></div>
+ <form class="f" id="fA">
+  <label class="full">Atividade<input name="titulo" required maxlength="300" placeholder="Ex.: Reunião com patrocinador"></label>
+  <label>Data<input name="date" type="date" required></label>
+  <label>Categoria<select name="cat"><option value="reuniao">Reunião</option><option value="evento">Evento</option><option value="tarefa">Tarefa</option><option value="pessoal">Pessoal</option><option value="aniversario">Aniversário</option><option value="outro">Outro</option></select></label>
+  <label>Início<input name="hora" type="time"></label>
+  <label>Término<input name="fim" type="time"></label>
+  <div class="full">
+   <div style="font-size:13.5px;font-weight:600;margin-bottom:6px">A CEO precisa participar?</div>
+   <div class="choice">
+    <label><input type="radio" name="tipo" value="participar" checked><div><b>Sim, participar</b><span>Entra na lista de ações e ela marca como concluída.</span></div></label>
+    <label><input type="radio" name="tipo" value="conhecimento"><div><b>Apenas para conhecimento</b><span>Só para ela saber o que está acontecendo.</span></div></label>
+   </div>
+  </div>
+  <label class="full">Local<input name="local" maxlength="300" placeholder="Endereço ou sala"></label>
+  <label>Contato<input name="contato" maxlength="120" placeholder="Nome e telefone"></label>
+  <label>Link da videochamada<input name="link" type="url" maxlength="300" placeholder="https://meet.google.com/…"></label>
+  <label class="full">Descrição<textarea name="desc" maxlength="3000" placeholder="Pauta, observações, quem participa…"></textarea></label>
+  <div class="full rep">
+   <label class="inline"><input type="checkbox" name="rep"> Repetir toda semana até</label>
+   <input name="repAte" type="date" style="margin-top:8px;width:100%">
+  </div>
+  <div class="factions">
+   <button type="button" class="btn danger small del" id="aDel">Excluir</button>
+   <button type="button" class="btn ghost" data-close>Cancelar</button>
+   <button class="btn" id="aSave">Salvar</button>
+  </div>
+ </form>
+</dialog>
+
+<dialog id="dlgV">
+ <div class="mhead"><h2 id="dlgVTitle">Novo voo</h2><button type="button" data-close aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button></div>
+ <form class="f" id="fV">
+  <label>Data<input name="date" type="date" required></label>
+  <label>Localizador<input name="localizador" maxlength="12" placeholder="Ex.: OWLAMT" style="text-transform:uppercase"></label>
+  <label>Origem (sigla)<input name="origem" required maxlength="40" placeholder="NVT" style="text-transform:uppercase"></label>
+  <label>Destino (sigla)<input name="destino" required maxlength="40" placeholder="GRU" style="text-transform:uppercase"></label>
+  <label>Saída<input name="saida" type="time"></label>
+  <label>Chegada<input name="chegada" type="time"></label>
+  <label>Companhia<input name="cia" maxlength="40" placeholder="LATAM, GOL, Azul…"></label>
+  <label>Voo<input name="voo" maxlength="20" placeholder="LA 3305"></label>
+  <label>Classe<input name="classe" maxlength="4"></label>
+  <label>Bilhete<input name="bilhete" maxlength="80"></label>
+  <label class="full">Observações<textarea name="obs" maxlength="1000" placeholder="Conexão, bagagem, transfer…"></textarea></label>
+  <div class="factions">
+   <button type="button" class="btn danger small del" id="vDel">Excluir</button>
+   <button type="button" class="btn ghost" data-close>Cancelar</button>
+   <button class="btn">Salvar</button>
+  </div>
+ </form>
+</dialog>
+
+<dialog id="dlgN">
+ <div class="mhead"><h2>Aviso do dia</h2><button type="button" data-close aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button></div>
+ <form class="f" id="fN">
+  <label class="full">Um aviso por linha (ex.: AGENDA FECHADA PELA MANHÃ, FOLGA, Feriado)<textarea name="t"></textarea></label>
+  <div class="factions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn">Salvar</button></div>
+ </form>
+</dialog>
+
+<dialog id="dlgK">
+ <div class="mhead"><h2>Acesso à agenda</h2></div>
+ <form class="f" id="fK">
+  <label class="full">Cole aqui o link ou a chave de acesso que você recebeu<input name="k" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://… ?k=…"></label>
+  <p class="full muted" id="kMsg" style="margin:0"></p>
+  <div class="factions"><button class="btn">Entrar</button></div>
+ </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+window.addEventListener('error',function(ev){try{var n=document.getElementById('note');n.textContent='Erro no app: '+ev.message+' (linha '+ev.lineno+':'+ev.colno+')';n.classList.add('on')}catch(x){}});
+window.addEventListener('unhandledrejection',function(ev){try{var n=document.getElementById('note');n.textContent='Erro no app: '+(ev.reason&&ev.reason.message||ev.reason);n.classList.add('on')}catch(x){}});
+</script>
+<script>
+{
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse=s=>{const[a,b,c]=s.split('-').map(Number);return new Date(a,b-1,c)};
+const addD=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return ymd(d)};
+const MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const SEM=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const CAT={reuniao:['Reunião','#e88c08'],evento:['Evento','#b4530a'],tarefa:['Tarefa','#78716c'],pessoal:['Pessoal','#8b6fc2'],aniversario:['Aniversário','#d9468f'],outro:['Outro','#a8a29e']};
+const AP={FLN:'Florianópolis',CGH:'São Paulo · Congonhas',GRU:'São Paulo · Guarulhos',VCP:'Campinas · Viracopos',NVT:'Navegantes',CGR:'Campo Grande',XAP:'Chapecó',CNF:'Belo Horizonte · Confins',SSA:'Salvador',LEC:'Lençóis',IGU:'Foz do Iguaçu',GIG:'Rio · Galeão',SDU:'Rio · Santos Dumont',AEP:'Buenos Aires · Aeroparque',FTE:'El Calafate',ADD:'Adis Abeba',SIN:'Singapura',DOH:'Doha',CAI:'Cairo',IST:'Istambul',POA:'Porto Alegre',CWB:'Curitiba',BSB:'Brasília',JOI:'Joinville',EZE:'Buenos Aires · Ezeiza',LIS:'Lisboa',MIA:'Miami'};
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const ic=n=>`<svg class="i"><use href="#i-${n}"/></svg>`;
+const safeUrl=u=>/^https:[\/][\/]/i.test(u||'')?u:'';
+
+const S={acts:[],fls:[],av:{},
+ today:ymd(new Date()),sel:ymd(new Date()),calM:null,mode:'dia',filter:'todas',q:'',vmode:'prox',
+ isAdmin:false,role:'ceo',canWrite:true,dirty:true,byDate:{},flByDate:{},avByDate:{},allActs:[],allFl:[]};
+S.calM=S.sel.slice(0,7);
+try{const m=localStorage.getItem('ncdMode');if(m)S.mode=m}catch(e){}
+
+function rebuild(){
+ if(!S.dirty)return;S.dirty=false;
+ S.byDate={};for(const a of S.acts){(S.byDate[a.date]||(S.byDate[a.date]=[])).push(a)}
+ for(const k in S.byDate)S.byDate[k].sort((a,b)=>(a.hora||'99').localeCompare(b.hora||'99')||a.id.localeCompare(b.id));
+ S.allFl=S.fls.slice().sort((a,b)=>(a.date+(a.saida||'')).localeCompare(b.date+(b.saida||'')));
+ S.flByDate={};for(const f of S.allFl)(S.flByDate[f.date]||(S.flByDate[f.date]=[])).push(f);
+ S.avByDate=S.av;S.allActs=S.acts;
+}
+const isDone=a=>a.concluida==='TRUE';
+const adminView=()=>S.isAdmin&&S.role==='admin';
+
+/* ---------- calendário ---------- */
+function renderCal(){
+ const[y,m]=S.calM.split('-').map(Number);
+ $('#calTitle').textContent=cap(MES[m-1])+' '+y;
+ const first=new Date(y,m-1,1);let d=new Date(first);d.setDate(1-first.getDay());
+ let h='';
+ for(let i=0;i<42;i++){
+  const ds=ymd(d),list=S.byDate[ds]||[],part=list.filter(a=>a.tipo!=='conhecimento'),pend=part.filter(a=>!isDone(a));
+  const off=(S.avByDate[ds]||[]).some(t=>/folga|feriado|ano novo|natal/i.test(t));
+  let dots='';
+  if(pend.length)dots+='<i></i>'.repeat(Math.min(pend.length,3));
+  else if(part.length)dots+='<i class="ok"></i>';
+  if(list.length&&!part.length)dots+='<i class="k"></i>';
+  if(S.flByDate[ds])dots+='<svg><use href="#i-plane"/></svg>';
+  const cls=['day',d.getMonth()!==m-1?'out':'',ds===S.today?'today':'',ds===S.sel?'sel':'',off?'off':''].join(' ');
+  const lbl=`${d.getDate()} de ${MES[d.getMonth()]}: ${pend.length} pendente(s)${S.flByDate[ds]?', voo':''}`;
+  h+=`<button class="${cls}" data-d="${ds}" aria-label="${esc(lbl)}"><span class="n">${d.getDate()}</span><span class="dots">${dots}</span></button>`;
+  d.setDate(d.getDate()+1);
+  if(i>=34&&d.getMonth()!==m-1&&d.getDay()===0)break;
+ }
+ $('#days').innerHTML=h;
+ // stats do mês
+ let tot=0,ok=0;for(const[ds,l]of Object.entries(S.byDate))if(ds.startsWith(S.calM))for(const a of l)if(a.tipo!=='conhecimento'){tot++;if(isDone(a))ok++}
+ $('#stTitle').textContent='Em '+MES[m-1];
+ $('#stBig').innerHTML=`${ok} <small>de ${tot}</small>`;
+ $('#stBar').style.width=(tot?ok/tot*100:0)+'%';
+ const pendHoje=(S.byDate[S.today]||[]).filter(a=>a.tipo!=='conhecimento'&&!isDone(a)).length;
+ $('#stSub').textContent=`atividades com participação concluídas · ${pendHoje} pendente${pendHoje===1?'':'s'} hoje`;
+ // próximo voo
+ const now=S.today,nf=(S.allFl||[]).find(f=>f.date>=now);
+ const nb=$('#nextFl');
+ if(nf){const dd=parse(nf.date);nb.innerHTML=`<div class="muted">Próximo voo · ${SEM[dd.getDay()].split('-')[0]}, ${dd.getDate()} de ${MES[dd.getMonth()]}</div><div class="route">${esc(nf.origem)} ${ic('plane')} ${esc(nf.destino)}</div><div class="muted">${esc([nf.saida&&'Saída '+nf.saida,nf.cia,nf.voo,nf.localizador&&'Loc. '+nf.localizador].filter(Boolean).join(' · '))}</div>`;nb.classList.remove('hide')}
+ else nb.classList.add('hide');
+}
+
+/* ---------- itens ---------- */
+function passFilter(a){
+ if(S.filter==='participar')return a.tipo!=='conhecimento';
+ if(S.filter==='conhecimento')return a.tipo==='conhecimento';
+ if(S.filter==='pendentes')return a.tipo!=='conhecimento'&&!isDone(a);
+ return true;
+}
+function itemHTML(a){
+ const k=a.tipo==='conhecimento',done=isDone(a),c=CAT[a.cat]||CAT.outro,adm=adminView();
+ const time=a.hora?`<div class="time">${esc(a.hora)}${a.fim?`<small>até ${esc(a.fim)}</small>`:''}</div>`:`<div class="time allday">Dia todo</div>`;
+ const tipoTag=adm?`<button class="tag ${k?'k':'p'}" data-tg="${esc(a.id)}" title="Clique para alternar">${k?ic('eye')+'Para conhecimento':ic('user')+'Participar'}</button>`
+  :`<span class="tag ${k?'k':'p'}">${k?ic('eye')+'Para conhecimento':ic('user')+'Participar'}</span>`;
+ const meta=[];
+ if(a.local)meta.push(`<div>${ic('pin')}<span>${esc(a.local)}</span></div>`);
+ if(a.contato)meta.push(`<div>${ic('phone')}<span>${esc(a.contato)}</span></div>`);
+ const u=safeUrl(a.link);if(u)meta.push(`<div>${ic('video')}<a href="${esc(u)}" target="_blank" rel="noopener">Entrar na videochamada</a></div>`);
+ const can=S.canWrite;
+ const chk=k?`<button class="check k" data-ck="${esc(a.id)}" data-dt="${esc(a.date)}" ${can?'':'disabled'} aria-pressed="${done}" aria-label="Marcar como ciente">${ic('check')}<span class="tx">${done?'Ciente':'Marcar ciente'}</span></button>`
+  :`<button class="check" data-ck="${esc(a.id)}" data-dt="${esc(a.date)}" ${can?'':'disabled'} aria-pressed="${done}" aria-label="${done?'Concluída — desmarcar':'Marcar como concluída'}">${ic('check')}</button>`;
+ return `<div class="it ${done?'done':''}">${time}<div class="box ${k?'know':''}"><h3>${esc(a.titulo)}</h3>
+  <div class="tags">${tipoTag}<span class="tag c"><i style="background:${c[1]}"></i>${c[0]}</span></div>
+  ${meta.length?`<div class="meta">${meta.join('')}</div>`:''}${a.desc?`<div class="desc">${esc(a.desc)}</div>`:''}
+  ${adm?`<div class="adm"><button class="btn ghost small" data-ed="${esc(a.id)}">${ic('edit')}Editar</button><button class="btn ghost small" data-dup="${esc(a.id)}">${ic('dup')}Duplicar</button></div>`:''}
+ </div>${chk}</div>`;
+}
+function flMini(f){
+ return `<div class="flday"><div class="time">${esc(f.saida||'')}</div><button class="fl" data-gofl style="text-align:left;padding:0;color:inherit;font:inherit;cursor:pointer;width:100%">${flBody(f,true)}</button></div>`;
+}
+function flBody(f,mini){
+ const o=String(f.origem||'').toUpperCase(),d=String(f.destino||'').toUpperCase();
+ return `<div class="main"><div class="ap"><b>${esc(o)}</b><span>${esc(AP[o]||'')}</span>${f.saida?`<div class="t">${esc(f.saida)}</div>`:''}</div>
+  <div class="path"><i></i>${ic('plane')}<i></i></div>
+  <div class="ap r"><b>${esc(d)}</b><span>${esc(AP[d]||'')}</span>${f.chegada?`<div class="t">${esc(f.chegada)}</div>`:''}</div></div>
+  <div class="stub"><div><small>Companhia · Voo</small><b>${esc([f.cia,f.voo].filter(Boolean).join(' · ')||'—')}</b></div>
+  ${f.localizador?`<div><small>Localizador</small><span class="loc">${esc(f.localizador)}${mini?'':` <button type="button" data-copy="${esc(f.localizador)}">Copiar</button>`}</span></div>`:''}
+  ${f.classe&&!mini?`<div><small>Classe</small><b>${esc(f.classe)}</b></div>`:''}</div>
+  ${(!mini&&(f.obs||f.bilhete))||(mini&&f.obs)?`<div class="foot">${f.obs?`<span>${esc(f.obs)}</span>`:''}${!mini&&f.bilhete?`<span>Bilhete ${esc(f.bilhete)}</span>`:''}</div>`:''}`;
+}
+function avisoHTML(ds){
+ const av=S.avByDate[ds]||[];const adm=adminView();
+ if(!av.length&&!adm)return'';
+ if(!av.length)return`<div style="margin-bottom:10px"><button class="btn ghost small" data-av="${ds}">${ic('plus')}Adicionar aviso do dia</button></div>`;
+ return `<div class="aviso">${ic('lock')}<span>${av.map(esc).join(' · ')}</span>${adm?`<span class="ed"><button data-av="${ds}">Editar</button></span>`:''}</div>`;
+}
+function dayList(ds){
+ const list=(S.byDate[ds]||[]).filter(passFilter),fl=S.filter==='todas'||S.filter==='participar'?(S.flByDate[ds]||[]):[];
+ const rows=[...list.map(a=>({t:a.hora||'',h:itemHTML(a),all:!a.hora})),...fl.map(f=>({t:f.saida||'',h:flMini(f)}))];
+ rows.sort((a,b)=>(a.all?-1:0)-(b.all?-1:0)||(a.t||'99').localeCompare(b.t||'99'));
+ return rows.map(r=>r.h).join('');
+}
+function renderDay(){
+ const d=parse(S.sel);
+ const body=$('#dayBody');
+ if(S.q.trim().length>=2){
+  const q=S.q.trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu,'');
+  const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/\p{M}/gu,'');
+  const res=S.allActs.filter(a=>passFilter(a)&&norm([a.titulo,a.local,a.desc,a.contato].join(' ')).includes(q)).sort((a,b)=>(a.date+(a.hora||'')).localeCompare(b.date+(b.hora||'')));
+  $('#dayTitle').innerHTML=`<span class="wk">Busca</span>${res.length} resultado${res.length===1?'':'s'}`;
+  let h='',last='';
+  for(const a of res.slice(0,150)){if(a.date!==last){const dd=parse(a.date);h+=`<div class="wday"><button data-go="${a.date}">${dd.getDate()} de ${MES[dd.getMonth()]}</button><span>${cap(SEM[dd.getDay()])}</span></div>`;last=a.date}h+=itemHTML(a)}
+  body.innerHTML=res.length?`<div class="list">${h}</div>${res.length>150?'<p class="muted">Mostrando os 150 primeiros.</p>':''}`:`<div class="empty">Nada encontrado para “${esc(S.q)}”.</div>`;
+  return;
+ }
+ if(S.mode==='dia'){
+  $('#dayTitle').innerHTML=`<span class="wk">${S.sel===S.today?'Hoje · '+SEM[d.getDay()]:cap(SEM[d.getDay()])}</span>${d.getDate()} de ${MES[d.getMonth()]}`;
+  const l=dayList(S.sel);
+  body.innerHTML=avisoHTML(S.sel)+(l?`<div class="list">${l}</div>`:`<div class="empty">${(S.byDate[S.sel]||[]).length?'Nenhuma atividade neste filtro.':'Agenda livre neste dia.'}</div>`);
+ }else{
+  const st=addD(S.sel,-((d.getDay()+6)%7)),en=addD(st,6),a=parse(st),b=parse(en);
+  $('#dayTitle').innerHTML=`<span class="wk">Semana</span>${a.getDate()}${a.getMonth()!==b.getMonth()?' de '+MES[a.getMonth()]:''} a ${b.getDate()} de ${MES[b.getMonth()]}`;
+  let h='';
+  for(let i=0;i<7;i++){const ds=addD(st,i),dd=parse(ds),l=dayList(ds);
+   h+=`<div class="wday"><button data-go="${ds}">${cap(SEM[dd.getDay()])}, ${dd.getDate()}</button>${ds===S.today?'<span>Hoje</span>':''}</div>${avisoHTML(ds)}${l?`<div class="list">${l}</div>`:'<div class="muted" style="padding-left:6px">Agenda livre</div>'}`}
+  body.innerHTML=h;
+ }
+}
+
+/* ---------- voos ---------- */
+function renderVoos(){
+ const all=S.allFl||[],list=S.vmode==='prox'?all.filter(f=>f.date>=S.today):all;
+ $('#vSub').textContent=`${all.filter(f=>f.date>=S.today).length} próximos · ${all.length} no total`;
+ let h='',lm='',ld='';
+ for(const f of list){const dd=parse(f.date),mk=f.date.slice(0,7);
+  if(mk!==lm){h+=`<div class="vmonth">${cap(MES[dd.getMonth()])} ${dd.getFullYear()}</div>`;lm=mk;ld=''}
+  if(f.date!==ld){h+=`<div class="vdate">${cap(SEM[dd.getDay()])}, ${dd.getDate()} de ${MES[dd.getMonth()]}</div>`;ld=f.date}
+  h+=`<div class="fl ${f.date<S.today?'past':''}">${flBody(f,false)}${adminView()?`<div class="foot" style="justify-content:flex-end"><button class="btn ghost small" data-edv="${esc(f.id)}">${ic('edit')}Editar voo</button></div>`:''}</div>`}
+ $('#vList').innerHTML=h||`<div class="empty">Nenhum voo ${S.vmode==='prox'?'programado a partir de hoje':'cadastrado'}.</div>`;
+}
+
+function render(){
+ rebuild();
+ $$('.adminOnly').forEach(e=>e.classList.toggle('hide',!adminView()));
+ $$('#modeSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===S.mode));
+ $$('.chip').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===S.filter));
+ $$('#vSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.vmode));
+ if(!$('#v-agenda').classList.contains('hide')){renderCal();renderDay()}else renderVoos();
+}
+
+/* ---------- navegação ---------- */
+function show(v){
+ $('#v-agenda').classList.toggle('hide',v!=='agenda');$('#v-voos').classList.toggle('hide',v!=='voos');
+ $('#tab-agenda').setAttribute('aria-selected',v==='agenda');$('#tab-voos').setAttribute('aria-selected',v==='voos');
+ render();
+}
+const route=()=>show(location.hash==='#voos'?'voos':'agenda');
+window.addEventListener('hashchange',route);
+$('#tab-agenda').onclick=()=>{location.hash='agenda'};
+$('#tab-voos').onclick=()=>{location.hash='voos'};
+function setSel(ds){S.sel=ds;S.calM=ds.slice(0,7);if(S.q){S.q='';$('#q').value=''}render()}
+$('#calPrev').onclick=()=>{const[y,m]=S.calM.split('-').map(Number);const d=new Date(y,m-2,1);S.calM=ymd(d).slice(0,7);renderCal()};
+$('#calNext').onclick=()=>{const[y,m]=S.calM.split('-').map(Number);const d=new Date(y,m,1);S.calM=ymd(d).slice(0,7);renderCal()};
+$('#days').onclick=e=>{const b=e.target.closest('[data-d]');if(b)setSel(b.dataset.d)};
+$('#dPrev').onclick=()=>setSel(addD(S.sel,S.mode==='dia'?-1:-7));
+$('#dNext').onclick=()=>setSel(addD(S.sel,S.mode==='dia'?1:7));
+$('#dToday').onclick=()=>setSel(S.today);
+$('#modeSeg').onclick=e=>{const b=e.target.closest('[data-m]');if(!b)return;S.mode=b.dataset.m;try{localStorage.setItem('ncdMode',S.mode)}catch(x){}render()};
+$$('.chip').forEach(b=>b.onclick=()=>{S.filter=b.dataset.f;render()});
+let qt;$('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{S.q=e.target.value;renderDay()},150)};
+$('#vSeg').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;S.vmode=b.dataset.v;render()};
+$('#nextFl').onclick=()=>{location.hash='voos'};
+document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,select')||document.querySelector('dialog[open]'))return;if(e.key==='ArrowLeft')$('#dPrev').click();if(e.key==='ArrowRight')$('#dNext').click()});
+
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2600)}
+function note(m){const n=$('#note');n.textContent=m||'';n.classList.toggle('on',!!m)}
+
+/* ---------- dados offline + sincronização ---------- */
+const API='https://script.google.com/macros/s/AKfycby9JFyylOWHfTmmmsPiDmP63UhZiRUTEbaPCWXrFLTSom0d5rmuoZvBUigus8qXUS8T/exec';
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
+let CHAVE=null,PAPEL=null;
+let outbox=LS.get('ncdOutbox',[]);
+const errMsg=e=>(e&&e.message)?e.message:'Não foi possível salvar agora.';
+const findA=id=>S.acts.find(a=>a.id===id);
+const findV=id=>S.fls.find(f=>f.id===id);
+const newId=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+
+function fromSheetA(r){return{id:r.id,date:r.data,hora:r.hora||'',fim:r.fim||'',titulo:r.titulo||'(sem título)',tipo:r.tipo==='conhecimento'?'conhecimento':'participar',cat:r.categoria||'outro',local:r.local||'',contato:r.contato||'',link:r.link||'',desc:r.descricao||'',concluida:String(r.concluida).toUpperCase()==='TRUE'?'TRUE':'FALSE'}}
+function fromSheetV(r){const o={...r,date:r.data};delete o.data;return o}
+const toSheet=a=>({id:a.id,data:a.date,hora:a.hora||'',fim:a.fim||'',titulo:a.titulo,tipo:a.tipo,categoria:a.cat||'',local:a.local||'',contato:a.contato||'',link:a.link||'',descricao:a.desc||''});
+const toSheetV=f=>{const o={...f,data:f.date};delete o.date;return o};
+
+/* aplica uma operação na cópia local (usado ao fazer a ação e ao reabrir o app com fila pendente) */
+function applyLocal(op,args){
+ if(op==='marcar'){const a=findA(args[0]);if(a)a.concluida=args[1]?'TRUE':'FALSE'}
+ else if(op==='salvarAtividade'){const n=fromSheetA({...args[0],concluida:(findA(args[0].id)||{}).concluida||'FALSE'});const i=S.acts.findIndex(x=>x.id===n.id);if(i>=0)S.acts[i]=n;else S.acts.push(n)}
+ else if(op==='excluirAtividade'){S.acts=S.acts.filter(a=>a.id!==args[0])}
+ else if(op==='salvarVoo'){const n=fromSheetV(args[0]);const i=S.fls.findIndex(x=>x.id===n.id);if(i>=0)S.fls[i]=n;else S.fls.push(n)}
+ else if(op==='excluirVoo'){S.fls=S.fls.filter(f=>f.id!==args[0])}
+ else if(op==='salvarAviso'){if(args[1]&&args[1].length)S.av[args[0]]=args[1];else delete S.av[args[0]]}
+ S.dirty=true;
+}
+function saveCache(){
+ LS.set('ncdData',{acts:S.acts,fls:S.fls,av:S.av,papel:PAPEL,quando:Date.now()});
+}
+function act(op,...args){
+ applyLocal(op,args);outbox.push({op,args,t:Date.now()});LS.set('ncdOutbox',outbox);saveCache();render();updateStatus();sync();
+}
+
+/* ---------- rede ---------- */
+let syncing=false,again=false,lastOk=LS.get('ncdLastSync',0);
+async function post(ops){
+ const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({k:CHAVE,ops})});
+ if(!r.ok)throw new Error('Servidor respondeu '+r.status);return r.json();
+}
+async function sync(){
+ if(!CHAVE)return;
+ if(syncing){again=true;return}
+ if(navigator.onLine===false){updateStatus();return}
+ syncing=true;updateStatus();
+ try{
+  while(outbox.length){
+   const lote=outbox.slice(0,50);
+   const d=await post(lote.map(o=>({op:o.op,args:o.args})));
+   if(d.erro)throw new Error(d.erro);
+   (d.res||[]).forEach((x,i)=>{if(x&&!x.ok)toast('Uma alteração não foi aceita: '+x.erro)});
+   outbox=outbox.slice(lote.length);LS.set('ncdOutbox',outbox);
+  }
+  if(!document.querySelector('dialog[open]')){
+   const r=await fetch(API+'?api=carregar&k='+encodeURIComponent(CHAVE));
+   const d=await r.json();
+   if(d.erro){if(/autoriz/i.test(d.erro)){askKey('Esta chave de acesso não é válida.');return}throw new Error(d.erro)}
+   PAPEL=d.papel;
+   S.acts=(d.atividades||[]).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.data)).map(fromSheetA);
+   S.fls=(d.voos||[]).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.data)).map(fromSheetV);
+   S.av={};for(const x of d.avisos||[])if(x.data)S.av[x.data]=String(x.avisos||'').split('|').map(s=>s.trim()).filter(Boolean);
+   for(const o of outbox)applyLocal(o.op,o.args);
+   S.dirty=true;saveCache();setRole();render();
+  }
+  lastOk=Date.now();LS.set('ncdLastSync',lastOk);
+ }catch(e){/* sem conexão ou servidor indisponível: tenta de novo depois */}
+ finally{syncing=false;updateStatus();if(again){again=false;setTimeout(sync,500)}}
+}
+function rel(t){if(!t)return'nunca';const m=Math.round((Date.now()-t)/60000);if(m<1)return'agora';if(m<60)return'há '+m+' min';const h=Math.round(m/60);if(h<24)return'há '+h+' h';const d=new Date(t);return d.getDate()+'/'+(d.getMonth()+1)}
+function updateStatus(){
+ const off=navigator.onLine===false,n=outbox.length;
+ let m='';
+ if(off)m=`Sem internet: você está vendo a agenda salva no aparelho (atualizada ${rel(lastOk)}).`+(n?` ${n} alteração${n>1?'ões':''} será${n>1?'ão':''} enviada${n>1?'s':''} quando a conexão voltar.`:'');
+ else if(n)m=syncing?`Enviando ${n} alteração${n>1?'ões':''}…`:`${n} alteração${n>1?'ões':''} aguardando envio.`;
+ note(m);
+}
+
+/* ---------- ações ---------- */
+function toggleCheck(id){const a=findA(id);if(!a)return;act('marcar',id,!isDone(a))}
+function copyText(t){
+ const ok=()=>toast('Localizador copiado.');
+ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(ok,()=>legacy())}else legacy();
+ function legacy(){const i=document.createElement('textarea');i.value=t;document.body.appendChild(i);i.select();let r=false;try{r=document.execCommand('copy')}catch(x){}i.remove();r?ok():toast('Localizador: '+t)}
+}
+document.addEventListener('click',e=>{
+ const t=e.target.closest('[data-ck],[data-ed],[data-dup],[data-tg],[data-av],[data-go],[data-gofl],[data-edv],[data-copy],[data-close]');if(!t)return;
+ if(t.dataset.ck)toggleCheck(t.dataset.ck);
+ else if(t.dataset.ed)openA(findA(t.dataset.ed));
+ else if(t.dataset.dup){const a=findA(t.dataset.dup);openA({...a,id:null},true)}
+ else if(t.dataset.tg){const a=findA(t.dataset.tg);if(!a)return;act('salvarAtividade',toSheet({...a,tipo:a.tipo==='conhecimento'?'participar':'conhecimento'}));toast('Tipo alterado.')}
+ else if(t.dataset.av)openN(t.dataset.av);
+ else if(t.dataset.go){S.mode='dia';setSel(t.dataset.go)}
+ else if('gofl' in t.dataset)location.hash='voos';
+ else if(t.dataset.edv)openV(findV(t.dataset.edv));
+ else if(t.dataset.copy){e.stopPropagation();copyText(t.dataset.copy)}
+ else if('close' in t.dataset)t.closest('dialog').close();
+});
+
+/* atividade */
+let editingA=null;
+function openA(a,dup){
+ const f=$('#fA');f.reset();editingA=a&&a.id?a.id:null;
+ $('#dlgATitle').textContent=editingA?'Editar atividade':(dup?'Duplicar atividade':'Nova atividade');
+ const v=a||{date:S.sel,tipo:'participar',cat:'reuniao'};
+ for(const k of['titulo','date','cat','hora','fim','local','contato','link','desc'])if(f.elements[k])f.elements[k].value=v[k]||'';
+ if(!v.cat)f.elements.cat.value='outro';
+ f.elements.tipo.value=v.tipo==='conhecimento'?'conhecimento':'participar';
+ $('#aDel').classList.toggle('hide',!editingA);$('.rep').classList.toggle('hide',!!editingA);
+ f.elements.repAte.value=addD(v.date||S.sel,28);
+ $('#dlgA').showModal();
+}
+$('#btnNew').onclick=()=>openA(null);
+$('#fA').onsubmit=e=>{
+ e.preventDefault();const f=e.target,g=k=>f.elements[k].value.trim();
+ const link=g('link');if(link&&!/^https:[\/][\/]/i.test(link)){toast('O link precisa começar com https:\/\/');return}
+ const base={date:g('date'),titulo:g('titulo'),cat:g('cat'),tipo:f.elements.tipo.value,hora:g('hora'),fim:g('fim'),local:g('local'),contato:g('contato'),link,desc:f.elements.desc.value.trim()};
+ const dates=[base.date];
+ if(!editingA&&f.elements.rep.checked){const ate=g('repAte');let d=addD(base.date,7);while(ate&&d<=ate&&dates.length<60){dates.push(d);d=addD(d,7)}}
+ for(const d of dates)act('salvarAtividade',toSheet({...base,id:editingA||newId('n'),date:d}));
+ $('#dlgA').close();toast(dates.length>1?`${dates.length} atividades criadas.`:'Atividade salva.');if(!editingA)setSel(base.date);
+};
+$('#aDel').onclick=()=>{
+ if(!editingA)return;const b=$('#aDel');
+ if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Confirmar exclusão';setTimeout(()=>{b.dataset.sure='';b.textContent='Excluir'},4000);return}
+ b.dataset.sure='';b.textContent='Excluir';const id=editingA;$('#dlgA').close();act('excluirAtividade',id);toast('Atividade excluída.');
+};
+
+/* voo */
+let editingV=null;
+const VC=['date','localizador','origem','destino','saida','chegada','cia','voo','classe','bilhete','obs'];
+function openV(v){
+ const f=$('#fV');f.reset();editingV=v&&v.id?v.id:null;
+ $('#dlgVTitle').textContent=editingV?'Editar voo':'Novo voo';
+ const x=v||{date:S.today};
+ for(const k of VC)f.elements[k].value=x[k]||'';
+ $('#vDel').classList.toggle('hide',!editingV);$('#dlgV').showModal();
+}
+$('#btnNewFl').onclick=()=>openV(null);
+$('#fV').onsubmit=e=>{
+ e.preventDefault();const f=e.target,g=k=>f.elements[k].value.trim();
+ const d={id:editingV||newId('v')};for(const k of VC){let v=g(k);if(['localizador','origem','destino'].includes(k))v=v.toUpperCase();d[k]=v}
+ $('#dlgV').close();act('salvarVoo',toSheetV(d));toast('Voo salvo.');
+};
+$('#vDel').onclick=()=>{
+ if(!editingV)return;const b=$('#vDel');
+ if(b.dataset.sure!=='1'){b.dataset.sure='1';b.textContent='Confirmar exclusão';setTimeout(()=>{b.dataset.sure='';b.textContent='Excluir'},4000);return}
+ b.dataset.sure='';b.textContent='Excluir';const id=editingV;$('#dlgV').close();act('excluirVoo',id);toast('Voo excluído.');
+};
+
+/* aviso */
+let editingN=null;
+function openN(ds){editingN=ds;$('#fN').elements.t.value=(S.avByDate[ds]||[]).join('\n');$('#dlgN').showModal()}
+$('#fN').onsubmit=e=>{e.preventDefault();const t=e.target.elements.t.value.split('\n').map(s=>s.trim()).filter(Boolean);$('#dlgN').close();act('salvarAviso',editingN,t);toast('Aviso salvo.')};
+
+/* ---------- papel e chave de acesso ---------- */
+function setRole(){
+ const was=S.isAdmin;S.isAdmin=PAPEL==='admin';
+ if(!S.isAdmin)S.role='ceo';else if(!was){let r=null;try{r=localStorage.getItem('ncdRole')}catch(x){}S.role=r||'admin'}
+ const box=$('#rolebox');
+ if(S.isAdmin){box.innerHTML=`<label for="roleSel">Visão</label><select id="roleSel"><option value="admin">Administrador</option><option value="ceo">CEO</option></select>`;
+  const s=$('#roleSel');s.value=S.role;s.onchange=()=>{S.role=s.value;try{localStorage.setItem('ncdRole',S.role)}catch(x){}render()}}
+ else box.innerHTML=`<span class="pill-role">${PAPEL==='ceo'?'CEO':'…'}</span>`;
+}
+function askKey(msg){
+ const d=$('#dlgK');$('#kMsg').textContent=msg||'';if(!d.open)d.showModal();
+}
+$('#fK').onsubmit=e=>{e.preventDefault();let v=e.target.elements.k.value.trim();const m=v.match(/[?&]k=([A-Za-z0-9]+)/);if(m)v=m[1];
+ if(!/^[A-Za-z0-9]{8,64}$/.test(v)){$('#kMsg').textContent='Cole a chave ou o link completo que você recebeu.';return}
+ CHAVE=v;LS.set('ncdKey',v);$('#dlgK').close();sync()};
+
+/* ---------- início ---------- */
+function boot(){
+ const q=new URLSearchParams(location.search).get('k');
+ CHAVE=(q&&/^[A-Za-z0-9]{8,64}$/.test(q))?q:LS.get('ncdKey',null);
+ if(q)LS.set('ncdKey',CHAVE);
+ const c=LS.get('ncdData',null);
+ if(c){S.acts=c.acts||[];S.fls=c.fls||[];S.av=c.av||{};PAPEL=c.papel||null;S.dirty=true}
+ setRole();route();updateStatus();
+ if(!CHAVE){askKey();return}
+ if(!c)note(navigator.onLine===false?'Sem internet. Abra o app uma vez com internet para baixar a agenda.':'Baixando a agenda…');
+ sync();
+ setInterval(()=>{if(!document.hidden)sync()},30000);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
+ window.addEventListener('online',()=>{updateStatus();sync()});
+ window.addEventListener('offline',updateStatus);
+}
+boot();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+}
+</script>
+</body>
+</html>
